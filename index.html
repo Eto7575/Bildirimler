@@ -1,0 +1,396 @@
+
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GitHub Pages Bildirim Paneli</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts & Lucide Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col justify-between">
+
+  <!-- Header -->
+  <header class="border-b border-slate-800 bg-slate-900/50 backdrop-blur sticky top-0 z-10">
+    <div class="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="bg-indigo-600 p-2 rounded-lg text-white">
+          <i data-lucide="bell-ring" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <h1 class="text-lg font-bold tracking-tight">GitHub Pages Notification Center</h1>
+          <p class="text-xs text-slate-400">Anlık ve öncelikli bildirim yönetim sistemi</p>
+        </div>
+      </div>
+      <a href="https://github.com" target="_blank" class="text-slate-400 hover:text-white transition">
+        <i data-lucide="github" class="w-6 h-6"></i>
+      </a>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="max-w-4xl w-full mx-auto px-4 py-8 flex-grow">
+    
+    <!-- Custom Toast Notification System -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+      
+      <!-- Left Column: Settings (Stored in LocalStorage) -->
+      <div class="md:col-span-1 bg-slate-800/50 border border-slate-800 rounded-2xl p-6 space-y-6">
+        <div class="flex items-center space-x-2 pb-2 border-b border-slate-800">
+          <i data-lucide="settings" class="w-5 h-5 text-indigo-400"></i>
+          <h2 class="font-semibold text-slate-200">Bağlantı Ayarları</h2>
+        </div>
+        
+        <div class="space-y-4">
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">GitHub Kullanıcı Adı</label>
+            <input type="text" id="github-username" placeholder="Örn: ahmet123" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 transition">
+          </div>
+          
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">GitHub Depo (Repository)</label>
+            <input type="text" id="github-repo" placeholder="Örn: bildirim-sayfasi" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 transition">
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">Personal Access Token (PAT)</label>
+            <input type="password" id="github-token" placeholder="ghp_xxxxxxxxxxxx" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 transition">
+            <p class="text-[10px] text-slate-500 mt-1">Token sadece tarayıcınızda (Local Storage) saklanır, harici bir sunucuya asla gönderilmez.</p>
+          </div>
+
+          <button onclick="saveSettings()" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-medium py-2 rounded-lg text-sm transition flex items-center justify-center space-x-2">
+            <i data-lucide="save" class="w-4 h-4"></i>
+            <span>Ayarları Kaydet</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Right Column: Control Panel -->
+      <div class="md:col-span-2 bg-slate-800/30 border border-slate-800 rounded-2xl p-6 flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between pb-4 border-b border-slate-800 mb-6">
+            <div class="flex items-center space-x-2">
+              <i data-lucide="send" class="w-5 h-5 text-indigo-400"></i>
+              <h2 class="font-semibold text-slate-200">Bildirim Gönder</h2>
+            </div>
+            <!-- Live Status Badge -->
+            <button onclick="checkCurrentStatus()" class="flex items-center space-x-1.5 px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-300 text-xs hover:bg-indigo-500/20 transition">
+              <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+              <span>Aktif Bildirimi Oku</span>
+            </button>
+          </div>
+
+          <!-- Notification Form -->
+          <div class="space-y-4">
+            <div class="flex items-center space-x-4">
+              <div class="flex-grow">
+                <label class="block text-xs font-medium text-slate-400 mb-1">Bildirim Durumu</label>
+                <div class="flex items-center space-x-4 bg-slate-900 p-2.5 rounded-lg border border-slate-700">
+                  <label class="flex items-center space-x-2 cursor-pointer">
+                    <input type="radio" name="notif-status" value="true" checked class="text-indigo-600 focus:ring-indigo-500 bg-slate-800 border-slate-700">
+                    <span class="text-sm text-slate-300 font-medium">Aktif (Bildirim Gönder)</span>
+                  </label>
+                  <label class="flex items-center space-x-2 cursor-pointer">
+                    <input type="radio" name="notif-status" value="false" class="text-indigo-600 focus:ring-indigo-500 bg-slate-800 border-slate-700">
+                    <span class="text-sm text-slate-300 font-medium">Pasif ("Yok" Dön)</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label class="block text-xs font-medium text-slate-400 mb-1">Bildirim ID (Benzersiz Sayı)</label>
+                <div class="relative">
+                  <input type="number" id="notif-id" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 transition">
+                  <button onclick="generateRandomId()" class="absolute right-2 top-1.5 p-1 text-slate-400 hover:text-white" title="Rastgele Kimlik Oluştur">
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                  </button>
+                </div>
+              </div>
+              
+              <div>
+                <label class="block text-xs font-medium text-slate-400 mb-1">Öncelik Derecesi</label>
+                <select id="notif-priority" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 transition">
+                  <option value="1">1 - Çok Düşük (Sessiz)</option>
+                  <option value="2">2 - Düşük (Bilgi Verici)</option>
+                  <option value="3" selected>3 - Normal (Önemli Değil)</option>
+                  <option value="4">4 - Yüksek (Dikkat Çekici)</option>
+                  <option value="5">5 - Kritik (Acil Uyarı)</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-xs font-medium text-slate-400 mb-1">Hedef Dosya Yolu</label>
+                <input type="text" id="notif-filepath" value="notification.json" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 transition" placeholder="notification.json">
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1">Bildirim Başlığı</label>
+              <input type="text" id="notif-title" placeholder="Örn: Haftalık Skor Yarışı Başladı!" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 transition">
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1">Bildirim İçeriği (Mesaj)</label>
+              <textarea id="notif-message" rows="4" placeholder="Uygulamanın ekranında çıkacak detaylı mesaj..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 transition resize-none"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-8">
+          <button onclick="publishNotification()" id="btn-publish" class="w-full bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-semibold py-3.5 rounded-xl transition flex items-center justify-center space-x-2 shadow-lg shadow-indigo-600/20">
+            <i data-lucide="globe" class="w-5 h-5"></i>
+            <span>Bildirimi GitHub'da Yayınla</span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Active JSON Preview -->
+    <div class="mt-8 bg-slate-800/20 border border-slate-800 rounded-2xl p-6">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
+        <div class="flex items-center space-x-2">
+          <i data-lucide="file-code" class="w-5 h-5 text-indigo-400"></i>
+          <h3 class="font-semibold text-slate-200">Dosya Çıktı Önizlemesi (JSON)</h3>
+        </div>
+        <span class="text-xs text-slate-500">Uygulamanızın okuyacağı ham veri</span>
+      </div>
+      <pre id="json-preview" class="bg-slate-950 p-4 rounded-xl text-xs text-emerald-400 overflow-x-auto font-mono">Yükleniyor veya ayar girilmedi...</pre>
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-800/60 bg-slate-950 py-4 text-center text-xs text-slate-500">
+    <p>© 2026 MIT App Inventor Background Polling Assistant. Tüm Hakları Saklıdır.</p>
+  </footer>
+
+  <!-- Notification & Panel Logic -->
+  <script>
+    // Initialize Lucide Icons
+    lucide.createIcons();
+
+    // On Load
+    window.onload = function() {
+      loadSettings();
+      generateRandomId();
+      updateJsonPreview();
+      checkCurrentStatus(true); // silent check on start
+    }
+
+    // Auto update JSON preview when fields change
+    document.querySelectorAll('#notif-title, #notif-message, #notif-id, #notif-priority, input[name="notif-status"]').forEach(element => {
+      element.addEventListener('input', updateJsonPreview);
+    });
+
+    function getFormValues() {
+      const active = document.querySelector('input[name="notif-status"]:checked').value === "true";
+      return {
+        id: parseInt(document.getElementById('notif-id').value) || 0,
+        active: active,
+        priority: parseInt(document.getElementById('notif-priority').value) || 3,
+        title: active ? document.getElementById('notif-title').value.trim() : "",
+        message: active ? document.getElementById('notif-message').value.trim() : ""
+      };
+    }
+
+    function updateJsonPreview() {
+      const values = getFormValues();
+      document.getElementById('json-preview').textContent = JSON.stringify(values, null, 2);
+    }
+
+    function generateRandomId() {
+      document.getElementById('notif-id').value = Math.floor(100000 + Math.random() * 900000);
+      updateJsonPreview();
+    }
+
+    // Save/Load Connection Settings
+    function saveSettings() {
+      const username = document.getElementById('github-username').value.trim();
+      const repo = document.getElementById('github-repo').value.trim();
+      const token = document.getElementById('github-token').value.trim();
+
+      if (!username || !repo || !token) {
+        showToast("Lütfen tüm bağlantı ayarlarını doldurun!", "error");
+        return;
+      }
+
+      localStorage.setItem('gh_username', username);
+      localStorage.setItem('gh_repo', repo);
+      localStorage.setItem('gh_token', token);
+
+      showToast("Ayarlar başarıyla kaydedildi!", "success");
+      checkCurrentStatus();
+    }
+
+    function loadSettings() {
+      document.getElementById('github-username').value = localStorage.getItem('gh_username') || "";
+      document.getElementById('github-repo').value = localStorage.getItem('gh_repo') || "";
+      document.getElementById('github-token').value = localStorage.getItem('gh_token') || "";
+    }
+
+    // Toast Alert system
+    function showToast(message, type = "info") {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = `flex items-center space-x-2 px-4 py-3 rounded-xl shadow-xl text-sm font-medium transition-all duration-300 transform translate-y-2 opacity-0 pointer-events-auto max-w-sm `;
+      
+      if (type === "success") {
+        toast.className += "bg-emerald-600 text-white";
+        toast.innerHTML = `<i data-lucide="check-circle" class="w-5 h-5"></i> <span>${message}</span>`;
+      } else if (type === "error") {
+        toast.className += "bg-rose-600 text-white";
+        toast.innerHTML = `<i data-lucide="alert-triangle" class="w-5 h-5"></i> <span>${message}</span>`;
+      } else {
+        toast.className += "bg-slate-800 text-slate-200 border border-slate-700";
+        toast.innerHTML = `<i data-lucide="info" class="w-5 h-5 text-indigo-400"></i> <span>${message}</span>`;
+      }
+
+      container.appendChild(toast);
+      lucide.createIcons();
+
+      // Trigger animation
+      setTimeout(() => {
+        toast.classList.remove('translate-y-2', 'opacity-0');
+      }, 50);
+
+      // Remove toast
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-[-10px]');
+        setTimeout(() => toast.remove(), 300);
+      }, 4000);
+    }
+
+    // Read current state from GitHub Pages
+    async function checkCurrentStatus(silent = false) {
+      const username = document.getElementById('github-username').value.trim();
+      const repo = document.getElementById('github-repo').value.trim();
+      const filepath = document.getElementById('notif-filepath').value.trim() || "notification.json";
+
+      if (!username || !repo) {
+        if (!silent) showToast("Mevcut durumu sorgulamak için önce bağlantı ayarlarını kaydedin.", "error");
+        return;
+      }
+
+      const url = `https://${username}.github.io/${repo}/${filepath}?t=${new Date().getTime()}`;
+
+      try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error("Dosya bulunamadı veya site henüz aktif değil.");
+        const data = await response.json();
+
+        // Fill form fields with loaded data
+        if (data.active) {
+          document.querySelector('input[name="notif-status"][value="true"]').checked = true;
+          document.getElementById('notif-title').value = data.title || "";
+          document.getElementById('notif-message').value = data.message || "";
+        } else {
+          document.querySelector('input[name="notif-status"][value="false"]').checked = true;
+        }
+        
+        if (data.id) {
+          document.getElementById('notif-id').value = data.id;
+        }
+
+        if (data.priority) {
+          document.getElementById('notif-priority').value = data.priority;
+        }
+
+        updateJsonPreview();
+        if (!silent) showToast("Canlı sunucudaki güncel bildirim başarıyla yüklendi!", "success");
+      } catch (err) {
+        if (!silent) showToast("Canlı veri okunamadı: " + err.message, "error");
+      }
+    }
+
+    // Publish to GitHub (Using GitHub API)
+    async function publishNotification() {
+      const username = document.getElementById('github-username').value.trim();
+      const repo = document.getElementById('github-repo').value.trim();
+      const token = document.getElementById('github-token').value.trim();
+      const filepath = document.getElementById('notif-filepath').value.trim() || "notification.json";
+
+      if (!username || !repo || !token) {
+        showToast("Lütfen öncelikle tüm bağlantı ayarlarını yapıp kaydedin!", "error");
+        return;
+      }
+
+      const btn = document.getElementById('btn-publish');
+      const originalText = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = `<i data-lucide="loader" class="w-5 h-5 animate-spin"></i> <span>GitHub Güncelleniyor...</span>`;
+      lucide.createIcons();
+
+      const apiUrl = `https://api.github.com/repos/${username}/${repo}/contents/${filepath}`;
+      const payloadData = getFormValues();
+      const contentBase64 = btoa(unescape(encodeURIComponent(JSON.stringify(payloadData, null, 2))));
+
+      let sha = "";
+
+      // 1. Step: Get the file SHA if it exists
+      try {
+        const getRes = await fetch(apiUrl, {
+          headers: {
+            "Authorization": `token ${token}`,
+            "Accept": "application/vnd.github.v3+json"
+          }
+        });
+
+        if (getRes.status === 200) {
+          const fileData = await getRes.json();
+          sha = fileData.sha;
+        }
+      } catch (e) {
+        console.log("Existing file check skipped. Proceeding to create.", e);
+      }
+
+      // 2. Step: Create or Update file content
+      const putBody = {
+        message: `Notification update (ID: ${payloadData.id}, Priority: ${payloadData.priority})`,
+        content: contentBase64
+      };
+
+      if (sha) {
+        putBody.sha = sha;
+      }
+
+      try {
+        const putRes = await fetch(apiUrl, {
+          method: "PUT",
+          headers: {
+            "Authorization": `token ${token}`,
+            "Content-Type": "application/json",
+            "Accept": "application/vnd.github.v3+json"
+          },
+          body: JSON.stringify(putBody)
+        });
+
+        if (putRes.ok) {
+          showToast("Öncelikli bildirim başarıyla yayınlandı! Değişikliklerin canlıya geçmesi (GitHub Pages derlemesi) 1-2 dakika sürebilir.", "success");
+        } else {
+          const errData = await putRes.json();
+          throw new Error(errData.message || "Bilinmeyen API hatası.");
+        }
+      } catch (err) {
+        showToast("Hata oluştu: " + err.message, "error");
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+        lucide.createIcons();
+      }
+    }
+  </script>
+</body>
+</html>
